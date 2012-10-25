@@ -1,10 +1,10 @@
 
-Mandelbrot.class: Mandelbrot.java Complex.java
-	javac Mandelbrot.java Complex.java
+Mandelbrot.class: Mandelbrot.java
+	javac Mandelbrot.java
 
 .PHONY: clean run
 	
-run: Mandelbrot.class Complex.class
+run: Mandelbrot.class
 	appletviewer file:///Users/haro/work/report/complexfunc/mandelbrot/app.html
 
 clean:
