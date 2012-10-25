@@ -1,5 +1,3 @@
-// Mandelbrot.java
-
 import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.*;
@@ -15,17 +13,14 @@ public class Mandelbrot extends Applet
 	Button resetButton, applyButton;
 	Label lbX1, lbY1, lbX2, lbY2;
 	TextField tfConvergent, tfDivergence;
+	Image imgBuf;
+	Point m_pBegin, m_pEnd;
 
+	int width = 800, height = 800;
 	int times = 200;
 	int hassan = 2;
 	double rmin, rmax, imin, imax;
 	boolean m_bDragging = false;
-
-	int width = 800, height = 800;
-	Image imgBuf;
-	Point m_pBegin, m_pEnd;
-
-	private void init_range() { rmin = -2; rmax = 1; imin = -1.5; imax = 1.5; }
 
 	public void init() {
 		addMouseMotionListener(this);
@@ -35,36 +30,32 @@ public class Mandelbrot extends Applet
 		init_range();
 		renew();
 
-		// reset button
-		resetButton = new Button("Reset");
-		add(resetButton);
-		resetButton.addActionListener(new ActionAdp());
-
 		// labels
-		lbX1 = new Label("x1 =     ");
-		lbY1 = new Label("y1 =     ");
-		lbX2 = new Label("x2 =     ");
-		lbY2 = new Label("y2 =     ");
-		add(lbX1);
-		add(lbY1);
-		add(lbX2);
-		add(lbY2);
+		add(lbX1 = new Label("x1 =     "));
+		add(lbY1 = new Label("y1 =     "));
+		add(lbX2 = new Label("x2 =     "));
+		add(lbY2 = new Label("y2 =     "));
 
 		// text fields
-		tfConvergent = new TextField(5);
-		tfDivergence = new TextField(5);
-		tfConvergent.setText(""+times);
-		tfDivergence.setText(""+hassan);
+		tfConvergent = new TextField(""+times, 5);
+		tfDivergence = new TextField(""+hassan, 5);
 		add(new Label("Convergent: "));
 		add(tfConvergent);
 		add(new Label("Divergence: "));
 		add(tfDivergence);
 
-		// apply button
+		// buttons
 		applyButton = new Button("apply");
 		add(applyButton);
 		applyButton.addActionListener(new ActionAdp());
+
+		resetButton = new Button("Reset");
+		add(resetButton);
+		resetButton.addActionListener(new ActionAdp());
+
 	}
+
+	private void init_range() { rmin = -2; rmax = 1; imin = -1.5; imax = 1.5; }
 
 	private void update_label()
 	{
@@ -79,10 +70,9 @@ public class Mandelbrot extends Applet
 	public void keyReleased(KeyEvent e) {
 		int k = e.getKeyCode();
 		if (k == KeyEvent.VK_RIGHT || k == KeyEvent.VK_LEFT
-				|| k == KeyEvent.VK_UP || k == KeyEvent.VK_DOWN)
-		{
-			renew();
-			repaint();
+				|| k == KeyEvent.VK_UP || k == KeyEvent.VK_DOWN
+				|| k == KeyEvent.VK_ESCAPE) {
+			renew_and_repaint();
 		}
 	}
 	public void keyPressed(KeyEvent e)
@@ -113,8 +103,7 @@ public class Mandelbrot extends Applet
 		else {
 			return;
 		}
-		renew();
-		repaint();
+		renew_and_repaint();
 	}
 
 	// MouseEvent Handler
@@ -142,8 +131,7 @@ public class Mandelbrot extends Applet
 		imin = imin + im_delta * m_pBegin.y;
 		imax = imin + im_delta * (m_pEnd.y - m_pBegin.y);
 
-		renew();
-		repaint();
+		renew_and_repaint();
 	}
 	public void mouseDragged(MouseEvent e) {
 		if (!m_bDragging)
@@ -163,13 +151,8 @@ public class Mandelbrot extends Applet
 	// また、選択範囲の縦横比と、width,heightの縦横比が一致するように終点調整する。
 	private void normalize_point()
 	{
-		double x1 = Math.min(m_pBegin.x, m_pEnd.x);
-		double x2 = Math.max(m_pBegin.x, m_pEnd.x);
-		double y1 = Math.min(m_pBegin.y, m_pEnd.y);
-		double y2 = Math.max(m_pBegin.y, m_pEnd.y);
-
-		m_pBegin.setLocation(x1,y1);
-		m_pEnd.setLocation(x2,y2);
+		m_pBegin.setLocation(Math.min(m_pBegin.x, m_pEnd.x), Math.min(m_pBegin.y, m_pEnd.y));
+		m_pEnd.setLocation(Math.max(m_pBegin.x, m_pEnd.x), Math.max(m_pBegin.y, m_pEnd.y));
 
 		double area_w = m_pEnd.x-m_pBegin.x;
 		double area_h = m_pEnd.y-m_pBegin.y;
@@ -188,14 +171,12 @@ public class Mandelbrot extends Applet
 		public void actionPerformed(ActionEvent e) {
 			if (e.getSource() == resetButton) {
 				init_range();
-				renew();
-				repaint();
+				renew_and_repaint();
 			}
 			else if (e.getSource() == applyButton) {
 				hassan = (new Integer(tfDivergence.getText())).intValue();
 				times = (new Integer(tfConvergent.getText())).intValue();
-				renew();
-				repaint();
+				renew_and_repaint();
 			}
 		}
 	}
@@ -203,17 +184,12 @@ public class Mandelbrot extends Applet
 	private void renew()
 	{
 		imgBuf = createImage(width, height);
-		mandel();
-	}
-
-	private void mandel()
-	{
 		Graphics g = imgBuf.getGraphics();
 
 		g.setColor(Color.black);
 		g.fillRect(0, 0, width, height);
 
-		paintMandelbrot(g, width, height);
+		paintMandelbrot(g);
 	}
 
 	public void paint(Graphics g)
@@ -226,36 +202,36 @@ public class Mandelbrot extends Applet
 		}
 	}
 
-	private Color getColor(int l, double rF, double iF){
-		l = l/2;
+	private void renew_and_repaint() { renew(); repaint(); }
+
+	private Color getColor(int l, double rF, double iF) {
 		Color[] c = {Color.red, Color.pink, Color.green, Color.yellow, Color.orange, Color.magenta, Color.blue, Color.cyan };
-		return c[l%c.length];
+		return c[(l/2)%c.length];
 	}
 
 	private double get_re_delta() { return (rmax - rmin) / width; }
 	private double get_im_delta() { return (imax - imin) / height; }
 
-	private void paintMandelbrot(Graphics g, int width, int height)
+	private void paintMandelbrot(Graphics g)
 	{
-		double r, i, rF, iF, cR, cI;
 		double rd = get_re_delta();
 		double id = get_im_delta();
 
 		for (int j = 0; j < width; j++) {
-			cR = rmin + rd * j;
+			double cR = rmin + rd * j;
 			for (int k = 0; k < height; k++) {
-				cI = imin + id * k;
-				r = i = 0.0;
+				double cI = imin + id * k;
+				double r = 0, i = 0;
 				for (int l = 0; l < times; l++) {
-					rF = r * r - i * i + cR;
-					iF = 2 * r * i + cI;
-					if (rF * rF + iF * iF > hassan*hassan) {
-						g.setColor(getColor(l, rF, iF));
+					double r2 = r * r - i * i + cR,
+					       i2 = 2 * r * i + cI;
+					r = r2;
+					i = i2;
+					if (r * r + i * i > hassan*hassan) {
+						g.setColor(getColor(l, r, i));
 						g.drawLine(j, k, j, k);
 						break;
 					}
-					r = rF;
-					i = iF;
 				}
 			}
 		}
